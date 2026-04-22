@@ -1,0 +1,7 @@
+[
+    {"id": 1, "description": "Обработать заказ", "priority": 8, "status": "created", "user_id": 101},
+    {"id": 2, "description": "Отправить уведомление", "priority": 3, "status": "in_progress", "user_id": 102},
+    {"id": 3, "description": "Пересчитать статистику", "priority": 6, "status": "completed", "user_id": 103},
+    {"id": 4, "description": "Проверить ресурс", "priority": 7, "status": "failed", "user_id": 104},
+    {"id": 5, "description": "Подготовить отчёт", "priority": 1, "status": "created", "user_id": 105}
+]
