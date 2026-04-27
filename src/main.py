@@ -1,10 +1,14 @@
 import logging
 import sys
+import asyncio
 from src.sources.generator_source import TaskSourceGenerator
 from src.sources.file_source import TaskSourceFile
 from src.sources.api_source import TaskSourceAPI
 from src.models.task import TaskSource, Task
 from src.models.task_queue import TaskQueue
+from src.models.async_task_queue import AsyncTaskQueue
+from src.models.task_handlers import EmailTaskHandler, NotificationHandler, PkgTaskHandler
+from src.models.async_executor import AsyncTaskExecutor
 
 def setup_logging() -> None:
     """Настройка логирования только в консоль."""
@@ -41,6 +45,31 @@ def process_queue(queue: TaskQueue, logger: logging.Logger) -> None:
     for task in queue.filter_by_priority(5, 10):
         logger.info(f"  Фильтр - priority 5-10: Задача {task.id}")
 
+
+async def process_async_executor(queue: AsyncTaskQueue, logger: logging.Logger) -> None:
+    """Обработка асинхронной очереди задач"""
+    tasks = [
+        {"id": 1, "type": "email", "payload": {"to": "user@example.com"}},
+        {"id": 2, "type": "notification", "payload": {"user_id": 123}},
+        {"id": 3, "type": "pkg", "payload": {"package_name": "my-package.tar.gz"}},
+        {"id": 4, "type": "email", "payload": {"to": "admin@example.com"}},
+        {"id": 5, "type": "unknown", "payload": {}},
+    ]
+
+    for task in tasks:
+        await queue.put(task)
+        logger.info(f"Добавлена задача {task['id']} (тип: {task['type']})")
+
+    executor = AsyncTaskExecutor(queue, max_workers=3) # Создаём исполнителя
+
+    executor.register_handler("email", EmailTaskHandler())
+    executor.register_handler("notification", NotificationHandler())
+    executor.register_handler("pkg", PkgTaskHandler())
+
+    async with executor:
+        logger.info("Исполнитель запущен, ожидаем обработку...")
+        await asyncio.sleep(6)
+
 def main() -> None:
     setup_logging()
     logger = logging.getLogger(__name__)
@@ -65,6 +94,12 @@ def main() -> None:
             process_tasks(source, logger)
         else:
             logger.error(f"Источник {source.__class__.__name__} не соответствует протоколу")
+
+    async def run():
+        async_queue = AsyncTaskQueue(max_size=10)
+        await process_async_executor(async_queue, logger)
+
+    asyncio.run(run())
 
 if __name__ == "__main__":
     main()
